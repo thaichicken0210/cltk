@@ -5,7 +5,6 @@ __author__ = ['Patrick J. Burns <patrick@diyclassics.org>',
               'Natasha Voake <natashavoake@gmail.com>',
               'Clément Besnier <clemsciences@aol.com>',
               'Andrew Deloucas <adeloucas@g.harvard.edu>']
-# Author info for Arabic?
 
 __license__ = 'MIT License. See LICENSE.'
 
@@ -68,7 +67,7 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
             tokenizer = BasePunktWordTokenizer('greek', GreekRegexSentenceTokenizer)
             tokens = tokenizer.tokenize(string)
         elif self.language == 'latin':
-            # Add deprecation warning to use cltk.tokenize.latin.word
+            # TODO: Add deprecation warning to use cltk.tokenize.latin.word
             # Enclitic support removed from this tokenizer
             tokenizer = TreebankWordTokenizer()
             tokens = tokenizer.tokenize(string)
@@ -88,7 +87,8 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
             tokenizer = BaseRegexWordTokenizer('old_french', OldFrenchTokenizerPatterns)
             tokens = tokenizer.tokenize(string)
         else:
-            tokenizer = TreebankWordTokenizer() # Should else have warning that default is used?
+            # TODO Should else have warning that default is used?
+            tokenizer = TreebankWordTokenizer()
             tokens = tokenizer.tokenize(string)
         return tokens
 
@@ -102,10 +102,11 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
 
 
 class BaseWordTokenizer:
-    """ Base class for word tokenization"""
+    """Base class for word tokenization"""
 
     def __init__(self, language: str = None):
-        """
+        """Constructor for BaseWordTokenizer
+
         :param language : language for word tokenization
         :type language: str
         """
@@ -114,9 +115,8 @@ class BaseWordTokenizer:
 
     @abstractmethod
     def tokenize(self, text: str, model: object = None):
-        """
-        Create a list of tokens from a string.
-        This method should be overridden by subclasses of BaseWordTokenizer.
+        """Create a list of tokens from a string. This method should
+        be overridden by subclasses of BaseWordTokenizer.
         """
         pass
 
@@ -125,7 +125,8 @@ class BasePunktWordTokenizer(BaseWordTokenizer):
     """Base class for punkt word tokenization"""
 
     def __init__(self, language: str = None, sent_tokenizer:object = None):
-        """
+        """Constructor for BasePunktWordTokenizer.
+
         :param language : language for sentence tokenization
         :type language: str
         """
@@ -138,7 +139,8 @@ class BasePunktWordTokenizer(BaseWordTokenizer):
             self.sent_tokenizer = PunktSentenceTokenizer(punkt_param)
 
     def tokenize(self, text: str):
-        """
+        """Tokenize input str and return a list of word token str.
+
         :rtype: list
         :param text: text to be tokenized into sentences
         :type text: str
@@ -163,7 +165,8 @@ class BaseRegexWordTokenizer(BaseWordTokenizer):
         super().__init__(language=self.language)
 
     def tokenize(self, text: str):
-        """
+        """Tokenize input str and return a list of word token str.
+
         :rtype: list
         :param text: text to be tokenized into sentences
         :type text: str

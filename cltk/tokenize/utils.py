@@ -1,27 +1,27 @@
-""" Tokenization utilities
-"""
+"""Tokenization utilities"""
 
 __author__ = ['Patrick J. Burns <patrick@diyclassics.org>']
 __license__ = 'MIT License.'
 
 import pickle
-from abc import abstractmethod
-from typing import List, Dict, Tuple, Set, Any, Generator
-import inspect
+from typing import List
 
-from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktTrainer
 from nltk.tokenize.punkt import PunktLanguageVars
+from nltk.tokenize.punkt import PunktSentenceTokenizer
+from nltk.tokenize.punkt import PunktTrainer
+
 
 class BaseSentenceTokenizerTrainer():
-    """ Train sentence tokenizer
-    """
+    """Train sentence tokenizer"""
 
-    def __init__(self: object, language: str = None,
-                    punctuation: List[str] = None,
-                    strict: bool = False,
-                    strict_punctuation: List[str] = None,
-                    abbreviations: List[str] = None):
-        """ Initialize stoplist builder with option for language specific parameters
+    def __init__(self: object,  # pylint: disable=too-many-arguments
+                 language: str = None,
+                 punctuation: List[str] = None,
+                 strict: bool = False,
+                 strict_punctuation: List[str] = None,
+                 abbreviations: List[str] = None):
+        """Initialize stoplist builder with option for language specific parameters.
+
         :type language: str
         :param language: text from which to build the stoplist
         :type punctuation: list
@@ -29,7 +29,7 @@ class BaseSentenceTokenizerTrainer():
         :type strict: bool
         :param strict: option for including additional punctuation for tokenizer
         :type strict: list
-        :param strict: list of additional punctuation used to train sentence tokenizer if strict is used
+        :param strict: list of additional punctuation used to train sentence tokenizer if strict is used  # pylint: disable=line-too-long
         :type abbreviations: list
         :param abbreviations: list of abbreviations used to train sentence tokenizer
         """
@@ -42,9 +42,7 @@ class BaseSentenceTokenizerTrainer():
         self.abbreviations = abbreviations
 
     def train_sentence_tokenizer(self: object, text: str):
-        """
-        Train sentence tokenizer.
-        """
+        """Train sentence tokenizer."""
         language_punkt_vars = PunktLanguageVars
 
         # Set punctuation
@@ -63,11 +61,12 @@ class BaseSentenceTokenizerTrainer():
 
         if self.abbreviations:
             for abbreviation in self.abbreviations:
-                tokenizer._params.abbrev_types.add(abbreviation)
+                tokenizer._params.abbrev_types.add(abbreviation)  # pylint: disable=protected-access
 
         return tokenizer
 
-    def pickle_sentence_tokenizer(self: object, filename: str, tokenizer: object):
-        # Dump pickled tokenizer
-        with open(filename, 'wb') as f:
-            pickle.dump(tokenizer, f)
+    @staticmethod
+    def pickle_sentence_tokenizer(filename: str, tokenizer: object):
+        """Dump pickled tokenizer."""
+        with open(filename, 'wb') as file_open:
+            pickle.dump(tokenizer, file_open)
