@@ -1,4 +1,4 @@
-"""Language-specific word tokenizers. Primary purpose is to handle enclitics."""
+"""Language-specific word tokenizers, for example for handling enclitics."""
 
 __author__ = ['Patrick J. Burns <patrick@diyclassics.org>',
               'Kyle P. Johnson <kyle@kyle-p-johnson.com>',
@@ -8,25 +8,22 @@ __author__ = ['Patrick J. Burns <patrick@diyclassics.org>',
 
 __license__ = 'MIT License. See LICENSE.'
 
-from typing import List, Dict, Tuple, Set, Any, Generator
+from typing import List
 from abc import abstractmethod
-
 import re
 
 from nltk.tokenize.punkt import PunktSentenceTokenizer, PunktParameters
-
 from nltk.tokenize.treebank import TreebankWordTokenizer
 
-import cltk.corpus.arabic.utils.pyarabic.araby as araby
-from cltk.tokenize.latin.sentence import LatinPunktSentenceTokenizer
+from cltk.corpus.arabic.utils.pyarabic import araby
+from cltk.tokenize.akkadian.word import tokenize_akkadian_signs
+from cltk.tokenize.akkadian.word import tokenize_akkadian_words
 from cltk.tokenize.greek.sentence import GreekRegexSentenceTokenizer
-
-from cltk.tokenize.akkadian.word import tokenize_akkadian_words, tokenize_akkadian_signs
-
 from cltk.tokenize.middle_english.params import MiddleEnglishTokenizerPatterns
 from cltk.tokenize.middle_high_german.params import MiddleHighGermanTokenizerPatterns
 from cltk.tokenize.old_norse.params import OldNorseTokenizerPatterns
 from cltk.tokenize.old_french.params import OldFrenchTokenizerPatterns
+from cltk.utils.cltk_logger import logger
 
 
 class WordTokenizer:  # pylint: disable=too-few-public-methods
@@ -38,9 +35,9 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
         self.language = language
         self.available_languages = ['akkadian',
                                     'arabic',
-                                    'french', # deprecate
+                                    'french',  # defaults to old_french
                                     'greek',
-                                    'latin',
+                                    'latin',  # deprecated, raises warning
                                     'middle_english',
                                     'middle_french',
                                     'middle_high_german',
@@ -49,9 +46,18 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
                                     'sanskrit',
                                     'multilingual'
                                     ]
-        assert self.language in self.available_languages, \
-            "Specific tokenizer not available for '{0}'. Only available for: '{1}'.".format(self.language,  # pylint: disable=line-too-long
-            self.available_languages)  # pylint: disable=line-too-long
+        assert_message = f"Specific tokenizer not available for '{self.language}'. Only available for: '{self.available_languages}'."  # pylint: disable=line-too-long
+        assert self.language in self.available_languages, assert_message
+        # raise deprecation or other warnings
+        if self.language == 'french':
+            self.language = 'old_french'
+            message = "`french` defaults to `old_french`. `middle_french` also available."  # pylint: disable=line-too-long
+            print(f'WARNING: {message}')
+            logger.warning(message)
+        elif self.language == 'latin':
+            message = "This method for Latin is deprecated. Instead, use `from cltk.tokenize.latin.word import WordTokenizer`."  # pylint: disable=line-too-long
+            print(f'WARNING: {message}')
+            logger.warning(message)
 
     def tokenize(self, string):
         """Tokenize incoming string."""
@@ -61,33 +67,40 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
             tokenizer = BaseArabyWordTokenizer('arabic')
             tokens = tokenizer.tokenize(string)
         elif self.language == 'french':
-            tokenizer = BaseRegexWordTokenizer('old_french', OldFrenchTokenizerPatterns)
+            tokenizer = BaseRegexWordTokenizer('old_french',
+                                               OldFrenchTokenizerPatterns)
             tokens = tokenizer.tokenize(string)
         elif self.language == 'greek':
-            tokenizer = BasePunktWordTokenizer('greek', GreekRegexSentenceTokenizer)
+            tokenizer = BasePunktWordTokenizer('greek',
+                                               GreekRegexSentenceTokenizer)
             tokens = tokenizer.tokenize(string)
         elif self.language == 'latin':
-            # TODO: Add deprecation warning to use cltk.tokenize.latin.word
-            # Enclitic support removed from this tokenizer
             tokenizer = TreebankWordTokenizer()
             tokens = tokenizer.tokenize(string)
         elif self.language == 'old_norse':
-            tokenizer = BaseRegexWordTokenizer('old_norse', OldNorseTokenizerPatterns)
+            tokenizer = BaseRegexWordTokenizer('old_norse',
+                                               OldNorseTokenizerPatterns)
             tokens = tokenizer.tokenize(string)
         elif self.language == 'middle_english':
-            tokenizer = BaseRegexWordTokenizer('middle_english', MiddleEnglishTokenizerPatterns)
+            tokenizer = BaseRegexWordTokenizer('middle_english',
+                                               MiddleEnglishTokenizerPatterns)
             tokens = tokenizer.tokenize(string)
         elif self.language == 'middle_french':
-            tokenizer = BaseRegexWordTokenizer('old_french', OldFrenchTokenizerPatterns)
+            tokenizer = BaseRegexWordTokenizer('old_french',
+                                               OldFrenchTokenizerPatterns)
             tokens = tokenizer.tokenize(string)
         elif self.language == 'middle_high_german':
-            tokenizer = BaseRegexWordTokenizer('middle_high_german', MiddleHighGermanTokenizerPatterns)
+            tokenizer = BaseRegexWordTokenizer('middle_high_german',
+                                               MiddleHighGermanTokenizerPatterns)  # pylint: disable=line-too-long
             tokens = tokenizer.tokenize(string)
         elif self.language == 'old_french':
-            tokenizer = BaseRegexWordTokenizer('old_french', OldFrenchTokenizerPatterns)
+            tokenizer = BaseRegexWordTokenizer('old_french',
+                                               OldFrenchTokenizerPatterns)
             tokens = tokenizer.tokenize(string)
         else:
-            # TODO Should else have warning that default is used?
+            message = f"Selected language '{self.language}' has not been assigned a specific word tokenizer. Using the NLTK's default `TreebankWordTokenizer()`."  # pylint: disable=line-too-long
+            print(f'WARNING: {message}')
+            logger.warning(message)
             tokenizer = TreebankWordTokenizer()
             tokens = tokenizer.tokenize(string)
         return tokens
@@ -102,7 +115,10 @@ class WordTokenizer:  # pylint: disable=too-few-public-methods
 
 
 class BaseWordTokenizer:
-    """Base class for word tokenization"""
+    """Base class for word tokenization
+
+    TODO: Document this and its usefulness. If useful, then comment this and its subclasses better.
+    """
 
     def __init__(self, language: str = None):
         """Constructor for BaseWordTokenizer
@@ -124,7 +140,7 @@ class BaseWordTokenizer:
 class BasePunktWordTokenizer(BaseWordTokenizer):
     """Base class for punkt word tokenization"""
 
-    def __init__(self, language: str = None, sent_tokenizer:object = None):
+    def __init__(self, language: str = None, sent_tokenizer: object = None):
         """Constructor for BasePunktWordTokenizer.
 
         :param language : language for sentence tokenization
@@ -153,7 +169,7 @@ class BasePunktWordTokenizer(BaseWordTokenizer):
 class BaseRegexWordTokenizer(BaseWordTokenizer):
     """Base class for regex word tokenization"""
 
-    def __init__(self, language:str = None, patterns:List[str] = None):
+    def __init__(self, language: str = None, patterns: List[str] = None):
         """
         :param language : language for sentence tokenization
         :type language: str
@@ -179,12 +195,11 @@ class BaseRegexWordTokenizer(BaseWordTokenizer):
 
 
 class BaseArabyWordTokenizer(BaseWordTokenizer):
-    """
-    Base class for word tokenizer using the pyarabic package:
+    """Base class for word tokenizer using the pyarabic package:
     https://pypi.org/project/PyArabic/
     """
 
-    def __init__(self, language:str = None):
+    def __init__(self, language: str = None):
         """
         :param language : language for sentence tokenization
         :type language: str
